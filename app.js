@@ -5,6 +5,8 @@ var bodyParser = require('body-parser');
 var cors = require('cors');
 var mongoose = require('mongoose');
 var xss = require("xss");
+var bcrypt = require('bcrypt');
+var salt = 10;
 
 mongoose.connect('mongodb://adminAsarel:wu4azare@ds213239.mlab.com:13239/portfolio-server');
 mongoose.connection.on('error', function(err) {
@@ -39,27 +41,34 @@ app.use(cors({origin: true, credentials: true}));
 
 var xssService = {
     sanitize: function (req, res, next) {
-        var data = req.body
+        var data = req.body;
         for(var key in data) {
             if (data.hasOwnProperty(key)) {
                 data[key] = xss(data[key]);
-                console.log(data[key]);
             }
         }
         next();
       }
 }
-
-app.post('/admin/register', xssService.sanitize, function(req,res){
-    res.status(200).send('test');
-    // var newUser = new User(req.body);
-    // newUser.save(function(err,product){
-    //     if(err) throw err;
-    //     console.log("User Saved!");
-    //     res.status(200).send({
-    //         type: true,
-    //         data: 'Succesfully Registered'})
-    //     });
+var bcryptService = {
+    hash: function(req, res, next){
+        bcrypt.hash(req.body.password, salt, function(err, res){
+            if (err) throw err;
+            req.body.password = res;
+            console.log(res)
+            next();
+        })
+    }  
+}
+app.post('/admin/register', xssService.sanitize, bcryptService.hash, function(req,res){
+    var newUser = new User(req.body);
+    newUser.save(function(err,product){
+        if(err) throw err;
+        console.log("User Saved!");
+        res.status(200).send({
+            type: true,
+            data: 'Succesfully Registered'})
+        });
     });
 
 app.post('/admin/login', function(req, res){
