@@ -40,19 +40,19 @@ var userSchema = new Schema({
 });
 
 var contactSchema = new Schema({
-    name: {
+    userName: {
         type: String,
         required: true
     },
-    email: {
+    userEmail: {
         type: String,
         required: true
     },
-    phoneNumber: {
-        type: Number,
+    userPhoneNumber: {
+        type: String,
         required: true
     },
-    comments: {
+    userComments: {
         type: String,
         required: true
     },
@@ -150,7 +150,7 @@ app.post('/contactFormSubmit', xssService.sanitize, function (req, res) {
             .create({
                 to: '+13235721018',
                 from: '+17208097550',
-                body: '',
+                body: 'Name: ' + contactSchema.userName + ',\nEmail: ' + contactSchema.userEmail + ',\nPhone Number: ' + contactSchema.userPhoneNumber + ',\nComments: ' + contactSchema.userComments
             })
             .then(message => {
                 console.log(message.sid)
