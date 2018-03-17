@@ -146,19 +146,23 @@ app.post('/contactFormSubmit', xssService.sanitize, function (req, res) {
     var contactSchema = new ContactForm(req.body);
     contactSchema.save(function (err, product) {
         if (err) throw err;
-        console.log("Form Submitted!");
-        console.log(req.body);
-        res.status(200).send({
-            type: true,
-            data: 'Form Information Submitted to Database!'
-        })
-        // client.messages
-        //     .create({
-        //         to: '+323572018',
-        //         from: '+17208097550',
-        //         body: 'This is the ship that made the Kessel Run in fourteen parsecs?',
-        //     })
-        //     .then(message => console.log(message.sid));
+        client.messages
+            .create({
+                to: '+13235721018',
+                from: '+17208097550',
+                body: '',
+            })
+            .then(message => {
+                console.log(message.sid)
+                res.status(200).send({
+                    type: true,
+                    data: 'Form Information Submitted to Database!'
+                })
+            })
+            .catch((err) => {
+                if (err) throw err;
+            })
+            
     });
 });
 
