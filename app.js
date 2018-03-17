@@ -9,6 +9,9 @@ var bcrypt = require('bcrypt');
 var salt = 10;
 var jwt = require('jsonwebtoken');
 var user = { name: 'Asarel Castellanos' };
+const accountSid = 'AC50d5ef0cf130f2ec1d6aa8f871221768';
+const authToken = '85c34197bc3c6c7c8b535d5b25e3a077';
+const client = require('twilio')(accountSid, authToken);
 
 mongoose.connect('mongodb://adminAsarel:wu4azare@ds213239.mlab.com:13239/portfolio-server');
 mongoose.connection.on('error', function (err) {
@@ -16,6 +19,7 @@ mongoose.connection.on('error', function (err) {
 });
 
 var Schema = mongoose.Schema;
+
 var userSchema = new Schema({
     firstName: String,
     lastName: String,
@@ -32,10 +36,38 @@ var userSchema = new Schema({
     modified: {
         type: Date,
         default: Date.now()
+    }
+});
+
+var contactSchema = new Schema({
+    name: {
+        type: String,
+        required: true
     },
+    email: {
+        type: String,
+        required: true
+    },
+    phoneNumber: {
+        type: Number,
+        required: true
+    },
+    comments: {
+        type: String,
+        required: true
+    },
+    created: {
+        type: Date,
+        default: Date.now()
+    },
+    modified: {
+        type: Date,
+        default: Date.now()
+    }
 });
 
 var User = mongoose.model('user', userSchema);
+var ContactForm = mongoose.model('contactform', contactSchema);
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -109,6 +141,26 @@ app.post('/admin/login', function (req, res) {
     })
 
 })
+
+app.post('/contactFormSubmit', xssService.sanitize, function (req, res) {
+    var contactSchema = new ContactForm(req.body);
+    contactSchema.save(function (err, product) {
+        if (err) throw err;
+        console.log("Form Submitted!");
+        console.log(req.body);
+        res.status(200).send({
+            type: true,
+            data: 'Form Information Submitted to Database!'
+        })
+        // client.messages
+        //     .create({
+        //         to: '+323572018',
+        //         from: '+17208097550',
+        //         body: 'This is the ship that made the Kessel Run in fourteen parsecs?',
+        //     })
+        //     .then(message => console.log(message.sid));
+    });
+});
 
 app.listen(port, function () {
     console.log('listening on port: ', port);
