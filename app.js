@@ -7,6 +7,8 @@ var mongoose = require('mongoose');
 var xss = require("xss");
 var bcrypt = require('bcrypt');
 var salt = 10;
+var jwt = require('jsonwebtoken');
+var user = { name: 'Asarel Castellanos' };
 
 mongoose.connect('mongodb://adminAsarel:wu4azare@ds213239.mlab.com:13239/portfolio-server');
 mongoose.connection.on('error', function (err) {
@@ -30,7 +32,7 @@ var userSchema = new Schema({
     modified: {
         type: Date,
         default: Date.now()
-    }
+    },
 });
 
 var User = mongoose.model('user', userSchema);
@@ -86,9 +88,12 @@ app.post('/admin/login', function (req, res) {
                 if (err) throw err;
                 console.log(resp)
                 if (resp) {
+                    const token = jwt.sign({ user }, 'secret_key', { expiresIn: '300s' });
+                    console.log("user's token: ", token);
                     res.status(200).send({
                         type: true,
-                        data: 'User Logged In!'
+                        data: 'User Logged In!',
+                        token: token
                     })
                 } else {
                     res.status(200).send({
