@@ -50,7 +50,7 @@ var contactSchema = new Schema({
     },
     userPhoneNumber: {
         type: String,
-        required: true
+        required: false
     },
     userComments: {
         type: String,
