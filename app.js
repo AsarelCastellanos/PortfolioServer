@@ -13,86 +13,31 @@ const accountSid = 'AC50d5ef0cf130f2ec1d6aa8f871221768';
 const authToken = '85c34197bc3c6c7c8b535d5b25e3a077';
 const client = require('twilio')(accountSid, authToken);
 
-mongoose.connect('mongodb://adminAsarel:wu4azare@ds213239.mlab.com:13239/portfolio-server');
-mongoose.connection.on('error', function (err) {
-    if (err) throw err;
-});
+//Schemas
+var userSchema = require('./_models/userSchema');
+var contactSchema = require('./_models/contactSchema');
+var blogSchema = require('./_models/blogSchema');
+var commentSchema = require('./_models/commentSchema');
 
-var Schema = mongoose.Schema;
-
-var userSchema = new Schema({
-    firstName: String,
-    lastName: String,
-    password: String,
-    email: String,
-    pic: {
-        type: String,
-        default: './assets/images/asarel.jpg'
-    },
-    created: {
-        type: Date,
-        default: Date.now()
-    },
-    modified: {
-        type: Date,
-        default: Date.now()
+//Connection to MLabs Database
+mongoose.connect('mongodb://adminAsarel:wu4azare@ds213239.mlab.com:13239/portfolio-server', function(err, db){
+    if (err) {
+        console.log('Error Connecting with mLabs');
+        process.exit(1);
+        throw err
+    } else {
+        console.log('Connected to mLabs')
+        commentCollection = db.collection("comments"),
+        blogCollection = db.collection("blogs")
     }
 });
 
-var contactSchema = new Schema({
-    userName: {
-        type: String,
-        required: true
-    },
-    userEmail: {
-        type: String,
-        required: true
-    },
-    userPhoneNumber: {
-        type: String,
-        required: false
-    },
-    userComments: {
-        type: String,
-        required: true
-    },
-    created: {
-        type: Date,
-        default: Date.now()
-    },
-    modified: {
-        type: Date,
-        default: Date.now()
-    }
-});
-
-var blogSchema = new Schema({
-    author: {
-        type: String,
-        required: true
-    },
-    createdDate: {
-        type: Date,
-        default: Date.now()
-    },
-    title: {
-        type: String,
-        required: true
-    },
-    content: {
-        type: String,
-        required: true
-    }
-});
-
-var User = mongoose.model('user', userSchema);
-var ContactForm = mongoose.model('contactform', contactSchema);
-var Blog = mongoose.model('blog', blogSchema);
-
+//Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cors({ origin: true, credentials: true }));
 
+//Santizing Inputs
 var xssService = {
     sanitize: function (req, res, next) {
         var data = req.body;
@@ -103,7 +48,9 @@ var xssService = {
         }
         next();
     }
-}
+};
+
+//Encrypting Passwords
 var bcryptService = {
     hash: function (req, res, next) {
         bcrypt.hash(req.body.password, salt, function (err, res) {
@@ -113,9 +60,11 @@ var bcryptService = {
             next();
         })
     }
-}
+};
+
+//Saving and Adding Users
 app.post('/admin/register', xssService.sanitize, bcryptService.hash, function (req, res) {
-    var newUser = new User(req.body);
+    var newUser = new userSchema(req.body);
     newUser.save(function (err, product) {
         if (err) throw err;
         console.log("User Saved!");
@@ -126,6 +75,7 @@ app.post('/admin/register', xssService.sanitize, bcryptService.hash, function (r
     });
 });
 
+//Login In
 app.post('/admin/login', function (req, res) {
     User.findOne({ 'email': req.body.email }, 'password', function (err, product) {
 
@@ -160,17 +110,18 @@ app.post('/admin/login', function (req, res) {
 
     })
 
-})
+});
 
+//Submitting Contact Request Forms
 app.post('/contactFormSubmit', xssService.sanitize, function (req, res) {
-    var contactSchema = new ContactForm(req.body);
-    contactSchema.save(function (err, product) {
+    var contactForm = new contactSchema(req.body);
+    contactForm.save(function (err, product) {
         if (err) throw err;
         client.messages
             .create({
                 to: '+13235721018',
                 from: '+17208097550',
-                body: 'Name: ' + contactSchema.userName + ',\nEmail: ' + contactSchema.userEmail + ',\nPhone Number: ' + contactSchema.userPhoneNumber + ',\nComments: ' + contactSchema.userComments
+                body: 'Name: ' + contactForm.userName + ',\nEmail: ' + contactForm.userEmail + ',\nPhone Number: ' + contactForm.userPhoneNumber + ',\nComments: ' + contactForm.userComments
             })
             .then(message => {
                 console.log(message.sid)
@@ -186,27 +137,57 @@ app.post('/contactFormSubmit', xssService.sanitize, function (req, res) {
     });
 });
 
+//Posting Blogs
 app.post('/postBlog', function (req, res) {
-    var newBlog = new Blog(req.body);
+    var newBlog = new blogSchema(req.body);
     newBlog.save(function (err, product) {
         if (err) throw err;
         console.log("Blog Saved!");
         res.status(200).send({
             type: true,
-            data: 'Succesfully Added New Blog'
+            data: 'Successfully Added New Blog'
         })
     });
 });
 
+//Getting Blogs to dynamically display
 app.get('/postBlog', function (req, res) {
     var id = req.headers.headerid
     id = mongoose.Types.ObjectId(id);
-    Blog.findOne({
+    blogSchema.findOne({
         _id: id
     }, function(err, data){
         if(err) throw err;
         console.log(data);
         res.status(200).send(data);
+    })
+});
+
+//Add Comments
+app.post('/postComment', function (req, res) {
+    var newComment = new commentSchema(req.body);
+    newComment.save(function(err, product){
+        if (err) throw err;
+        console.log("Comment Saved!");
+        res.status(200).send({
+            type: true,
+            data: "Successfully Added New Comment"
+        })
+    });
+});
+
+//Getting Comments to dynamically display
+app.post('/postComments', function(req, res){
+    commentCollection.find({ discussionid : req.body.discussionid }).toArray(function(err, docs){
+        if (err){
+            throw err;
+            res.sendStatus(500);
+        } else {
+            var result = docs.map(function(data){
+                return data;
+            })
+            res.json(result);
+        }
     })
 });
 
