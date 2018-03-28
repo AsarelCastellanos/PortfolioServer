@@ -158,12 +158,11 @@ app.get('/postBlog', function (req, res) {
         _id: id
     }, function(err, data){
         if(err) throw err;
-        console.log(data);
         res.status(200).send(data);
     })
 });
 
-//Add Comments
+// Add Comments
 app.post('/postComment', function (req, res) {
     var newComment = new commentSchema(req.body);
     newComment.save(function(err, product){
@@ -176,9 +175,9 @@ app.post('/postComment', function (req, res) {
     });
 });
 
-//Getting Comments to dynamically display
-app.post('/postComments', function(req, res){
-    commentCollection.find({ discussionid : req.body.discussionid }).toArray(function(err, docs){
+// Getting Comments to dynamically display
+app.get('/postComment', function(req, res){
+    commentCollection.find({ discussionId : req.headers.id }).toArray(function(err, docs){
         if (err){
             throw err;
             res.sendStatus(500);
