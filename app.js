@@ -77,7 +77,7 @@ app.post('/admin/register', xssService.sanitize, bcryptService.hash, function (r
 
 //Login In
 app.post('/admin/login', function (req, res) {
-    User.findOne({ 'email': req.body.email }, 'password', function (err, product) {
+    userSchema.findOne({ 'email': req.body.email }, 'password', function (err, product) {
 
         if (product === null) {
             res.status(200).send({
